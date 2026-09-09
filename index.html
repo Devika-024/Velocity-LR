@@ -277,7 +277,7 @@ td.desc-td { text-align: left; }
   line-height: 1.45;
 }
 .dd-item:last-child { border-bottom: none; }
-.dd-item:hover { background: #e0e0e0; }
+.dd-item:hover { background: #eee48a; }
 .dd-main { font-weight: 700; color: #1c2b3a; }
 .dd-sub  { font-size: 11px; color: #666; margin-top: 1px; }
 .dd-code { font-size: 11px; color: #999; }
@@ -285,7 +285,7 @@ td.desc-td { text-align: left; }
   font-size: 11px; background: #e8f5e9; color: #2e7d32;
   padding: 1px 6px; border-radius: 10px; margin-left: 5px;
 }
-.dd-item.active { background: #d6d6d6; }
+.dd-item.active { background: #e5ce39; }
 
 /* Signature column */
 td.sig-td {
@@ -993,15 +993,69 @@ function handleEnter(e, nextId) {
   if (e.key === 'Enter') { e.preventDefault(); focus(nextId); }
 }
 
-function consigneeKeydown(e) {
+ffunction consigneeKeydown(e) {
 
-    if (e.key !== 'Enter') return;
+    const dd = document.getElementById('dd_consignee');
 
-    e.preventDefault();
+    // If dropdown is open, allow keyboard navigation
+    if (dd && dd.classList.contains('open')) {
 
-    closeDD('dd_consignee');
+        // Arrow keys → navigate results
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
 
-    focus('f_mobile');
+            handleDDKeydown(
+                e,
+                'dd_consignee',
+                (item) => item.dispatchEvent(new MouseEvent('mousedown'))
+            );
+
+            return;
+        }
+
+        // Enter → select highlighted result
+        if (e.key === 'Enter') {
+
+            const active = dd.querySelector('.dd-item.active');
+
+            if (active) {
+
+                e.preventDefault();
+
+                active.dispatchEvent(
+                    new MouseEvent('mousedown')
+                );
+
+                return;
+            }
+
+            // No result highlighted → allow manual entry
+            e.preventDefault();
+
+            closeDD('dd_consignee');
+            focus('f_mobile');
+
+            return;
+        }
+
+        // Escape → close dropdown
+        if (e.key === 'Escape') {
+
+            e.preventDefault();
+            closeDD('dd_consignee');
+
+            return;
+        }
+
+    }
+
+    // Dropdown closed → Enter proceeds normally
+    if (e.key === 'Enter') {
+
+        e.preventDefault();
+
+        closeDD('dd_consignee');
+        focus('f_mobile');
+    }
 }
 
 // ── DROPDOWN KEYBOARD NAVIGATION ──
