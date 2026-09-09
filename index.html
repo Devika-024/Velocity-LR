@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Velocity Supply Chain – Receipt</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #c8c8c8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px 48px;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+}
+
+/* ── TOOLBAR ── */
+#toolbar {
+  width: 780px;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.tb-status {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border-radius: 5px;
+  padding: 7px 12px;
+  font-size: 11px;
+  color: #555;
+}
+.tb-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #e74c3c;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.tb-dot.ok { background: #27ae60; }
+.tb-btn {
+  background: #1c2b3a;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 18px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+.tb-btn:hover { background: #2c3e50; }
+.tb-btn.print { background: #c0392b; }
+.tb-btn.print:hover { background: #a93226; }
+.tb-btn.grey { background: #7f8c8d; }
+.tb-btn.grey:hover { background: #6c7a7b; }
+
+/* ── RECEIPT ── */
+#receipt {
+  width: 780px;
+  max-width: 100%;
+  background: #fff;
+  border: 2px solid #000;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+/* ── COMPANY HEADER ROW ── */
+.row-header {
+  display: flex;
+  border-bottom: 1px solid #000;
+}
+.cell-vehicle-type {
+  width: 25%;
+  border-left: 1px solid #000;
+  padding: 3px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cell-vehicle-type label {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #555;
+  margin-bottom: 2px;
+  display: block;
+}
+.cell-vehicle-type input {
+  border: none; outline: none; background: transparent;
+  font-family: Arial, sans-serif; 
+  font-size: 12px;
+  font-weight: 400; color: #000; width: 100%;
+  text-transform: uppercase;
+}
+.cell-vehicle-type input:focus { background: #fffde7; }
+
+.cell-company {
+  flex: 1;
+  text-align: center;
+  padding: 4px 10px;
+}
+.co-name {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+}
+.co-addr {
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* ── GSTIN / PAN ── */
+.row-gp { display: flex; border-bottom: 1px solid #000; }
+.cell-gstin { flex: 1; padding: 3px 6px; font-weight: 700; border-right: 1px solid #000; }
+.cell-pan   { flex: 1; padding: 3px 6px; font-weight: 700; }
+
+/* ── VEHICLE / DATE / LR ── */
+.row-vdl { display: flex; border-bottom: 1px solid #000; }
+.cell-vdl {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  font-weight: 700;
+  font-size: 9px;
+  border-right: 1px solid #000;
+}
+.cell-vdl:last-child { border-right: none; }
+.cell-vdl input {
+  flex: 1;
+  border: none; outline: none; background: transparent;
+  font-family: Arial, sans-serif; font-size: 12px;
+  font-weight: 400; color: #000; min-width: 0;
+}
+.cell-vdl input:focus { background: #fffde7; }
+
+/* LR No special — editable number with prefix */
+.lr-wrap { display: flex; align-items: center; gap: 2px; flex: 1; }
+.lr-wrap input {
+  width: 60px;
+  border: none; outline: none; background: transparent;
+  font-family: Arial, sans-serif; font-size: 14px;
+  font-weight: 400; color: #000; text-align: center;
+}
+.lr-wrap input:focus { background: #fffde7; }
+
+/* ── CONSIGNER / CONSIGNEE ── */
+.row-cc { display: flex; border-bottom: 1px solid #000; }
+.cell-consigner {
+  flex: 1; padding: 4px 6px; font-weight: 700;
+  border-right: 1px solid #000; line-height: 1.6;
+  font-size: 9px;
+}
+.cell-consignee {
+  flex: 1; padding: 4px 6px; font-weight: 700; font-size: 9px;
+}
+
+/* Consignee search */
+.consignee-search-wrap { position: relative; margin-bottom: 3px; }
+.consignee-search-wrap input.consignee-si {
+  width: 100%;
+  border: 1px solid #ccc; border-radius: 3px;
+  padding: 3px 6px;
+  font-family: Arial, sans-serif; 
+  font-size: 12px;
+  outline: none; color: #000;
+  background: #f9f9f9;
+}
+.consignee-search-wrap input.consignee-si:focus { border-color: #1c2b3a; background: #fffde7; }
+
+/* Consignee display (filled after selection) */
+.consignee-display { font-size: 12px; line-height: 1.7; font-weight: 700; }
+.consignee-display .c-name { font-weight: 700; }
+.consignee-display .c-loc  { font-weight: 400; }
+.consignee-mobile-row {
+  display: flex; align-items: center; gap: 3px;
+  font-size: 12px; font-weight: 400; margin-top: 1px;
+}
+.consignee-mobile-row input {
+  border: none; outline: none; background: transparent;
+  font-family: Arial, sans-serif; font-size: 12px;
+  font-weight: 400; color: #000; flex: 1;
+}
+.consignee-mobile-row input:focus { background: #fffde7; }
+
+/* ── FROM / TO ── */
+.row-ft { display: flex; border-bottom: 1px solid #000; }
+.cell-from { flex: 1; padding: 4px 6px; font-weight: 700; border-right: 1px solid #000; font-size: 9px; }
+.cell-to {
+  flex: 1; padding: 4px 6px; font-weight: 700;
+  display: flex; align-items: center; gap: 4px;
+  font-size: 9px;
+}
+.cell-to .sw { flex: 1; }
+.cell-to .sw input.si {
+  width: 100%;
+  border: none; outline: none; background: transparent;
+  font-family: Arial, sans-serif; font-size: 12px;
+  font-weight: 400; color: #000; padding: 0;
+}
+.cell-to .sw input.si:focus { background: #fffde7; }
+
+/* ── MAIN TABLE ── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+col.c-sr  { width: 26px; }
+col.c-inv { width: 150px; }
+col.c-qty { width: 36px; }
+col.c-sig { width: 156px; }
+
+th, td {
+  border-bottom: 1px solid #000;
+  border-right: 1px solid #000;
+  padding: 1px 3px;
+  font-size: 10.5px;
+  text-align: center;
+  vertical-align: middle;
+  height: 17px;
+}
+th { font-weight: 700; font-size: 9px; padding: 3px 4px; }
+th:first-child, td:first-child { border-left: none; }
+td.sig-td, th:last-child { border-right: none; }
+
+td input.ci {
+  width: 100%; border: none; outline: none; background: transparent;
+  font-family: Arial, sans-serif; font-size: 12px; color: #000;
+  text-align: center; padding: 0;
+}
+td input.ci:focus { background: #fffde7; }
+td.desc-td { text-align: left; }
+
+/* Searchable cell */
+.sw { position: relative; width: 100%; }
+.sw input.si {
+  width: 100%; border: none; outline: none; background: transparent;
+  font-family: Arial, sans-serif; font-size: 12px; color: #000;
+  padding: 0 2px; text-align: left;
+}
+.sw input.si:focus { background: #fffde7; }
+
+/* Dropdown */
+.ddrop {
+  display: none;
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 360px;
+  background: #fff;
+  border: 1px solid #bbb;
+  border-radius: 5px;
+  box-shadow: 0 10px 210px rgba(0,0,0,0.20);
+  z-index: 9999;
+  max-height: 230px;
+  overflow-y: auto;
+}
+.ddrop.open { display: block; }
+.dd-item {
+  padding: 7px 11px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.dd-item:last-child { border-bottom: none; }
+.dd-item:hover { background: #fff9c4; }
+.dd-main { font-weight: 700; color: #1c2b3a; }
+.dd-sub  { font-size: 11px; color: #666; margin-top: 1px; }
+.dd-code { font-size: 11px; color: #999; }
+.dd-stock {
+  font-size: 11px; background: #e8f5e9; color: #2e7d32;
+  padding: 1px 6px; border-radius: 10px; margin-left: 5px;
+}
+.dd-item.active { background: #fff9c4; }
+
+/* Signature column */
+td.sig-td {
+  font-weight: 700; font-size: 8px;
+  text-align: center; vertical-align: top;
+  padding-top: 6px; white-space: pre-line; line-height: 1.5;
+  border-right: none;
+}
+
+/* ── BOTTOM ── */
+.row-bottom { display: flex; }
+.bot-left { flex: 1; border-right: 1px solid #000; }
+.bot-right { width: 156px; display: flex; flex-direction: column; border-top: 1px solid #000; }
+
+.bot-total {
+  display: flex; align-items: center; gap: 14px;
+  padding: 3px 6px; font-weight: 700; font-size: 11px;
+  border-top: 1px solid #000; border-bottom: 1px solid #000;
+}
+.bot-total input {
+  border: none; outline: none; background: transparent;
+  font-family: Arial; font-size: 14px; font-weight: 700;
+  width: 80px; text-align: center;
+}
+.bot-total input:focus { background: #fffde7; }
+
+
+.bot-sig {
+  flex: 1; border-bottom: 1px solid #000;
+  font-size: 8px; font-weight: 700;
+  text-align: center; padding: 3px 4px 0; min-height: 28px;
+}
+.bot-sig:last-child { border-bottom: none; }
+
+/* ── PRINT ── */
+@media print {
+  @page { size: A4; margin: 7mm; }
+
+  body { background: #fff; padding: 0; display: block; }
+  #toolbar { display: none !important; }
+  #receipt { width: 100%; max-width: 100%; box-shadow: none; page-break-after: always; }
+  .receipt-copy { page-break-after: always; }
+  .receipt-copy:last-child { page-break-after: avoid; }
+  input:focus { background: transparent !important; }
+  .ddrop { display: none !important; }
+  .consignee-search-wrap { display: none !important; }
+  .cell-vehicle-type label { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <div class="tb-status">
+    <div class="tb-dot" id="dbDot"></div>
+    <span id="dbLabel">No database loaded</span>
+  </div>
+  <!-- <button class="tb-btn" onclick="document.getElementById('xlFile').click()">📂 Load Excel</button> 
+  <input type="file" id="xlFile" accept=".xlsx,.xls" style="display:none" onchange="loadExcel(this)"> 
+  <button class="tb-btn grey" onclick="clearData()">✕ Clear Data</button> -->
+  <button class="tb-btn" onclick="newReceipt()">+ New Receipt</button>
+  <button class="tb-btn print" onclick="printReceipt()">🖨 Print (3 copies)</button>
+</div>
+
+<!-- RECEIPT -->
+<div id="receipt">
+
+  <!-- Company header + Vehicle Type -->
+  <div class="row-header">
+    <div class="cell-company">
+      <div class="co-name">VELOCITY SUPPLY CHAIN PVT. LTD.</div>
+      <div class="co-addr">GAT NO.54 VILLAGE KURULI, TALUKA- KHED, PUNE-410501</div>
+    </div>
+    <div class="cell-vehicle-type">
+      <label>Vehicle Type</label>
+      <div class="sw">
+        <input type="text" class="si" id="f_vtype" placeholder="Search vehicle type…" tabindex="1"
+          autocomplete="off"
+          oninput="searchVehicleType(this.value)"
+          onfocus="if(this.value) searchVehicleType(this.value)"
+          onblur="setTimeout(()=>closeDD('dd_vtype'),180)"
+          onkeydown="ddKeydown(event, 'dd_vtype', 'f_veh')"
+          style="font-size:11px; background:transparent; border:none; outline:none; width:100%; font-family:Arial;">
+        <div class="ddrop" id="dd_vtype"></div>
+      </div>
+</div>
+  </div>
+
+  <!-- GSTIN / PAN -->
+  <div class="row-gp">
+    <div class="cell-gstin">GSTIN: 27AADCV9244R1ZF</div>
+    <div class="cell-pan">PAN:AADCV9244R</div>
+  </div>
+
+  <!-- Vehicle / Date / LR -->
+  <div class="row-vdl">
+    <div class="cell-vdl">
+      <span>VEHICLE NO.</span>
+      <div class="sw">
+        <input type="text" class="si" id="f_veh" tabindex="2"
+          autocomplete="off"
+          oninput="searchVehicleNo(this.value)"
+          onfocus="if(this.value) searchVehicleNo(this.value)"
+          onblur="setTimeout(()=>closeDD('dd_veh'),180)"
+          onkeydown="ddKeydown(event, 'dd_veh', 'f_date')"          
+          style="font-size:11px;">
+        <div class="ddrop" id="dd_veh"></div>
+      </div>
+    </div>
+    <div class="cell-vdl">
+      <span>DATE:</span>
+      <input type="text" id="f_date" tabindex="3"
+        onkeydown="handleEnter(event, 'f_lr')">
+    </div>
+    <div class="cell-vdl">
+      <span>LR NO.:-</span>
+      <div class="lr-wrap">
+        <input type="number" id="f_lr" tabindex="4" min="1"
+          onkeydown="handleEnter(event, 'f_consignee_search')"
+          oninput="saveLR()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Consigner / Consignee -->
+  <div class="row-cc">
+    <div class="cell-consigner">
+      CONSIGNER: VELOCITY SUPPLY CHAIN PVT. LTD.<br>
+      GAT NO.54 VILLAGE KURULI, TALUKA- KHED,,<br>
+      PUNE-410501
+    </div>
+    <div class="cell-consignee">
+      <span style="font-weight:700">CONSIGNEE:</span>
+      <!-- Search box (hidden on print) -->
+      <div class="consignee-search-wrap">
+        <input type="text" class="consignee-si" id="f_consignee_search"
+          placeholder="Search by customer or location…"
+          tabindex="5"
+          autocomplete="off"
+          oninput="searchConsignee(this.value)"
+          onfocus="if(this.value) searchConsignee(this.value)"
+          onblur="setTimeout(()=>closeDD('dd_consignee'),180)"
+          onkeydown="ddKeydown(event, 'dd_consignee', 'f_mobile')">
+        <div class="ddrop" id="dd_consignee"></div>
+      </div>
+      <!-- Display after selection -->
+      <div class="consignee-display" id="consignee_display"></div>
+      <div class="consignee-mobile-row" id="consignee_mobile_row" style="display:none">
+        <span>Mobile:</span>
+        <input type="text" id="f_mobile" tabindex="6"
+          onkeydown="handleEnter(event, 'f_to_si')">
+      </div>
+    </div>
+  </div>
+
+  <!-- From / To -->
+  <div class="row-ft">
+    <div class="cell-from">FROM: KURULI</div>
+    <div class="cell-to">
+      <span>TO:</span>
+      <div class="sw">
+        <input type="text" class="si" id="f_to_si"
+          tabindex="7"
+          autocomplete="off"
+          placeholder=""
+          oninput="searchLocation(this.value)"
+          onfocus="if(this.value) searchLocation(this.value)"
+          onblur="setTimeout(()=>closeDD('dd_to'),180)"
+          onkeydown="ddKeydown(event, 'dd_to', 'inv_1')">
+        <div class="ddrop" id="dd_to"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main items table -->
+  <table>
+    <colgroup>
+      <col class="c-sr">
+      <col class="c-inv">
+      <col class="c-qty">
+      <col>
+      <col class="c-sig">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>SR<br>NO</th>
+        <th>INVOICE NO.</th>
+        <th>QTY</th>
+        <th>ITEM DESCRIPTION</th>
+        <th>CONSIGNEE SIGNATURE</th>
+      </tr>
+    </thead>
+    <tbody id="tBody"></tbody>
+  </table>
+
+  <!-- Bottom -->
+  <div class="row-bottom">
+    <div class="bot-left">
+      <div class="bot-total">
+        <span>TOTAL</span>
+        <input id="f_total" type="text" readonly>
+      </div>
+    </div>
+    <div class="bot-right" style="min-height:0; border:none;">
+    </div>
+  </div>
+
+</div><!-- /receipt -->
+
+<script>
+// ── STORAGE KEYS ──
+const KEY_DB       = 'vsc_item_db';
+const KEY_CUSTOMER = 'vsc_customer_db';
+const KEY_LOCATION = 'vsc_location_db';
+const KEY_LR       = 'vsc_lr_number';
+const APPS_SCRIPT_URL = 'https://docs.google.com/spreadsheets/d/1TihofVhrW78AqozZHR-p_mGowNGhxCXjIckfbE8hoZc/edit?usp=sharing';
+
+// ── DATABASES ──
+let dbItems     = [];
+let dbCustomers = [];
+let dbLocations = [];
+
+// ── INIT: load from localStorage ──
+function initDB() {
+  try {
+    const items = localStorage.getItem(KEY_DB);
+    const custs = localStorage.getItem(KEY_CUSTOMER);
+    const locs  = localStorage.getItem(KEY_LOCATION);
+    if (items) dbItems     = JSON.parse(items);
+    if (custs) dbCustomers = JSON.parse(custs);
+    if (locs)  dbLocations = JSON.parse(locs);
+
+    const total = dbItems.length + dbCustomers.length + dbLocations.length;
+    if (total > 0) {
+      setStatus('ok', `Database loaded — ${dbItems.length} items, ${dbCustomers.length} customers, ${dbLocations.length} locations`);
+    } else {
+        setStatus('empty', 'Loading database…');
+        loadDatabaseFromServer();
+    }
+  } catch(e) {
+    setStatus('empty', 'Click Load Excel to load your database');
+  }
+
+  // LR number
+  const savedLR = localStorage.getItem(KEY_LR);
+  document.getElementById('f_lr').value = savedLR ? parseInt(savedLR) : 1;
+}
+
+// ── LOAD EXCEL ──
+function loadExcel(inp) {
+  const file = inp.files[0];
+  if (!file) return;
+  setStatus('empty', 'Reading Excel…');
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+
+      // Read each sheet by name (case-insensitive)
+      wb.SheetNames.forEach(name => {
+        const ws = wb.Sheets[name];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        const n = name.trim().toLowerCase();
+        if (n === 'data') {
+          dbItems = rows;
+          localStorage.setItem(KEY_DB, JSON.stringify(rows));
+        } else if (n === 'customer') {
+          dbCustomers = rows;
+          localStorage.setItem(KEY_CUSTOMER, JSON.stringify(rows));
+        } else if (n === 'location') {
+          dbLocations = rows;
+          localStorage.setItem(KEY_LOCATION, JSON.stringify(rows));
+        }
+      });
+
+      setStatus('ok', `Loaded & saved — ${dbItems.length} items, ${dbCustomers.length} customers, ${dbLocations.length} locations`);
+    } catch(err) {
+      setStatus('empty', 'Error reading file. Please try again.');
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  inp.value = '';
+}
+async function loadDatabaseFromServer() {
+
+    try {
+
+        const response = await fetch('/data/MASTER.xlsx');
+
+        if (!response.ok) {
+            throw new Error('Database file could not be loaded');
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+
+        const wb = XLSX.read(
+            new Uint8Array(arrayBuffer),
+            { type: 'array' }
+        );
+
+        wb.SheetNames.forEach(name => {
+
+            const ws = wb.Sheets[name];
+
+            const rows = XLSX.utils.sheet_to_json(
+                ws,
+                { defval: '' }
+            );
+
+            const n = name.trim().toLowerCase();
+
+            if (n === 'data') {
+
+                dbItems = rows;
+                localStorage.setItem(
+                    KEY_DB,
+                    JSON.stringify(rows)
+                );
+
+            }
+
+            else if (n === 'customer') {
+
+                dbCustomers = rows;
+                localStorage.setItem(
+                    KEY_CUSTOMER,
+                    JSON.stringify(rows)
+                );
+
+            }
+
+            else if (n === 'location') {
+
+                dbLocations = rows;
+                localStorage.setItem(
+                    KEY_LOCATION,
+                    JSON.stringify(rows)
+                );
+
+            }
+
+        });
+
+        setStatus(
+            'ok',
+            `Database loaded — ${dbItems.length} items, ${dbCustomers.length} customers, ${dbLocations.length} locations`
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        setStatus(
+            'empty',
+            'Database could not be loaded'
+        );
+
+    }
+
+}
+
+function clearData() {
+  if (!confirm('Remove all saved database data from this computer? You will need to reload the Excel.')) return;
+  [KEY_DB, KEY_CUSTOMER, KEY_LOCATION].forEach(k => localStorage.removeItem(k));
+  dbItems = []; dbCustomers = []; dbLocations = [];
+  setStatus('empty', 'Data cleared — click Load Excel to reload');
+}
+
+function setStatus(state, msg) {
+  const dot = document.getElementById('dbDot');
+  dot.className = 'tb-dot';
+  if (state === 'ok') dot.classList.add('ok');
+  document.getElementById('dbLabel').textContent = msg;
+}
+
+// ── LR AUTO-INCREMENT ──
+function saveLR() {
+  const val = document.getElementById('f_lr').value;
+  if (val) localStorage.setItem(KEY_LR, val);
+}
+
+function incrementLR() {
+  const inp = document.getElementById('f_lr');
+  const cur = parseInt(inp.value) || 0;
+  inp.value = cur + 1;
+  localStorage.setItem(KEY_LR, inp.value);
+}
+
+// ── TABLE ──
+const SIG_BLOCKS = {
+  1:  { span: 4, text: '' },
+  5:  { span: 4, text: 'GODOWN KEEPER SIGNATURE' },
+  9:  { span: 4, text: 'STAMP' },
+  13: { span: 3, text: "RECEIVER'S SIGNATURE &STAMP" },
+};
+const ROWS = 15;
+
+function buildTable() {
+  const tbody = document.getElementById('tBody');
+  tbody.innerHTML = '';
+
+  for (let i = 1; i <= ROWS; i++) {
+    const tr = document.createElement('tr');
+
+    // SR NO
+    const tdSr = document.createElement('td');
+    tdSr.textContent = i;
+    tdSr.style.borderLeft = 'none';
+    tr.appendChild(tdSr);
+
+    // Invoice No — plain text input
+    const tdInv = document.createElement('td');
+    const invInp = document.createElement('input');
+    invInp.type = 'text';
+    invInp.className = 'ci';
+    invInp.id = 'inv_' + i;
+   
+    invInp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); focus('qty_' + i); } });
+    tdInv.appendChild(invInp);
+    tr.appendChild(tdInv);
+
+    // QTY
+    const tdQty = document.createElement('td');
+    const qtyInp = document.createElement('input');
+    qtyInp.type = 'text';
+    qtyInp.className = 'ci';
+    qtyInp.id = 'qty_' + i;
+    
+    qtyInp.addEventListener('input', calcTotal);
+    qtyInp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        focus('desc_' + i);
+      }
+    });
+    tdQty.appendChild(qtyInp);
+    tr.appendChild(tdQty);
+
+    // Item Description — searchable
+    const tdDesc = document.createElement('td');
+    tdDesc.className = 'desc-td';
+    const sw = document.createElement('div');
+    sw.className = 'sw';
+    const dInp = document.createElement('input');
+    dInp.className = 'si';
+    dInp.type = 'text';
+    dInp.id = 'desc_' + i;
+    dInp.autocomplete = 'off';
+  
+    dInp.addEventListener('input', function() { searchItems(i, this.value); });
+    dInp.addEventListener('focus', function() { if (this.value) searchItems(i, this.value); });
+    dInp.addEventListener('blur',  function() { setTimeout(() => closeDD('dd_desc_' + i), 180); });
+    dInp.addEventListener('keydown', e => {
+      const ddId = 'dd_desc_' + i;
+      const dd = document.getElementById(ddId);
+      if (dd && dd.classList.contains('open')) {
+        handleDDKeydown(e, ddId, (item) => item.dispatchEvent(new MouseEvent('mousedown')));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (i < ROWS) {
+          focus('inv_' + (i + 1));
+        } else {
+          focus('f_total');
+        }
+      }
+    });
+    const ddDiv = document.createElement('div');
+    ddDiv.className = 'ddrop';
+    ddDiv.id = 'dd_desc_' + i;
+    sw.appendChild(dInp);
+    sw.appendChild(ddDiv);
+    tdDesc.appendChild(sw);
+    tr.appendChild(tdDesc);
+
+    // Right sig column
+    if (SIG_BLOCKS[i]) {
+      const sigTd = document.createElement('td');
+      sigTd.className = 'sig-td';
+      sigTd.rowSpan = SIG_BLOCKS[i].span;
+      sigTd.textContent = SIG_BLOCKS[i].text;
+      tr.appendChild(sigTd);
+    }
+
+    tbody.appendChild(tr);
+  }
+}
+
+// ── SEARCH: ITEMS ──
+function searchItems(row, q) {
+  const ddId = 'dd_desc_' + row;
+  const dd = document.getElementById(ddId);
+  if (!q || !dbItems.length) { closeDD(ddId); return; }
+  const ql = q.toLowerCase();
+  const hits = dbItems.filter(r =>
+    String(r['Material Description'] || '').toLowerCase().includes(ql)
+  ).slice(0, 12);
+  if (!hits.length) { closeDD(ddId); return; }
+  dd.innerHTML = '';
+  hits.forEach(r => {
+    const desc = String(r['Material Description'] || '');
+    const item = document.createElement('div');
+    item.className = 'dd-item';
+    item.innerHTML = `<span class="dd-main">${esc(desc)}</span>`;
+    item.addEventListener('mousedown', e => {
+      e.preventDefault();
+      document.getElementById('desc_' + row).value = desc;
+      closeDD(ddId);
+      if (row < ROWS) focus('inv_' + (row + 1));
+      else focus('f_total');
+    });
+    dd.appendChild(item);
+  });
+  dd.classList.add('open');
+}
+
+// ── FLEXIBLE COLUMN GETTER ──
+// Finds a value from a row regardless of column name casing/spacing
+function col(row, ...names) {
+  for (const name of names) {
+    // exact match first
+    if (row[name] !== undefined && row[name] !== '') return String(row[name]);
+    // case-insensitive match
+    const key = Object.keys(row).find(k => k.trim().toLowerCase() === name.trim().toLowerCase());
+    if (key && row[key] !== undefined && row[key] !== '') return String(row[key]);
+  }
+  return '';
+}
+
+// ── SEARCH: CONSIGNEE ──
+function searchConsignee(q) {
+  const dd = document.getElementById('dd_consignee');
+  if (!q) { closeDD('dd_consignee'); return; }
+  if (!dbCustomers.length) {
+    dd.innerHTML = '<div class="dd-item" style="color:#e74c3c">No customer database loaded — click Load Excel</div>';
+    dd.classList.add('open');
+    return;
+  }
+  const ql = q.toLowerCase();
+  const hits = dbCustomers.filter(r =>
+    col(r, 'Customer').toLowerCase().includes(ql) ||
+    col(r, 'LOCATION', 'Location', 'location').toLowerCase().includes(ql) ||
+    col(r, 'Customer ID', 'CustomerID', 'customer id').toLowerCase().includes(ql)
+  ).slice(0, 12);
+  if (!hits.length) { closeDD('dd_consignee'); return; }
+  dd.innerHTML = '';
+  hits.forEach(r => {
+    const name      = col(r, 'Customer', 'customer');
+    const custId    = col(r, 'Customer ID', 'CustomerID', 'customer id');
+    const location  = col(r, 'LOCATION', 'Location', 'location');
+    const territory = col(r, 'Territory', 'territory');
+    const mobile    = col(r, 'MOBILE', 'Mobile', 'mobile');
+    const item = document.createElement('div');
+    item.className = 'dd-item';
+    item.innerHTML =
+      `<span class="dd-main">${esc(name)} <span style="font-weight:400;color:#888">(${esc(custId)})</span></span>` +
+      `<br><span class="dd-sub">${esc(location)}${territory ? ', ' + esc(territory) : ''}</span>`;
+    item.addEventListener('mousedown', e => {
+      e.preventDefault();
+      fillConsignee(name, custId, location, territory, mobile);
+      closeDD('dd_consignee');
+      focus('f_mobile');
+    });
+    dd.appendChild(item);
+  });
+  dd.classList.add('open');
+}
+
+function fillConsignee(name, custId, location, territory, mobile) {
+  const display = document.getElementById('consignee_display');
+  display.innerHTML =
+    `<span class="c-name">${esc(name)} (${esc(custId)})</span><br>` +
+    `<span class="c-loc">${esc(location)}${territory ? ', ' + esc(territory) : ''}</span>`;
+  document.getElementById('f_mobile').value = mobile;
+  document.getElementById('consignee_mobile_row').style.display = 'flex';
+  document.getElementById('f_consignee_search').value = name + (custId ? ' (' + custId + ')' : '');
+}
+
+// ── SEARCH: VEHICLE TYPE ──
+function searchVehicleType(q) {
+  const dd = document.getElementById('dd_vtype');
+  if (!q) { closeDD('dd_vtype'); return; }
+  if (!dbLocations.length) {
+    dd.innerHTML = '<div class="dd-item" style="color:#e74c3c">No database loaded — click Load Excel</div>';
+    dd.classList.add('open');
+    return;
+  }
+  const ql = q.toLowerCase();
+  const seen = new Set();
+  const hits = dbLocations.filter(r => {
+    const vtype = col(r, 'Vehicle Type', 'vehicle type', 'VehicleType', 'VEHICLE TYPE');
+    if (!vtype || seen.has(vtype)) return false;
+    if (vtype.toLowerCase().includes(ql)) { seen.add(vtype); return true; }
+    return false;
+  }).slice(0, 12);
+  if (!hits.length) { closeDD('dd_vtype'); return; }
+  dd.innerHTML = '';
+  hits.forEach(r => {
+    const vtype = col(r, 'Vehicle Type', 'vehicle type', 'VehicleType', 'VEHICLE TYPE');
+    const item = document.createElement('div');
+    item.className = 'dd-item';
+    item.innerHTML = `<span class="dd-main">${esc(vtype)}</span>`;
+    item.addEventListener('mousedown', e => {
+      e.preventDefault();
+      document.getElementById('f_vtype').value = vtype;
+      closeDD('dd_vtype');
+      focus('f_veh');
+    });
+    dd.appendChild(item);
+  });
+  dd.classList.add('open');
+}
+
+// ── SEARCH: VEHICLE NO ──
+function searchVehicleNo(q) {
+  const dd = document.getElementById('dd_veh');
+  if (!q) { closeDD('dd_veh'); return; }
+  if (!dbLocations.length) {
+    dd.innerHTML = '<div class="dd-item" style="color:#e74c3c">No database loaded — click Load Excel</div>';
+    dd.classList.add('open');
+    return;
+  }
+  const ql = q.toLowerCase();
+  const seen = new Set();
+  const hits = dbLocations.filter(r => {
+    const vno = col(r, 'Vehicle Number', 'vehicle number', 'VehicleNumber', 'VEHICLE NUMBER', 'Vehicle No', 'Vehicle No.');
+    if (!vno || seen.has(vno)) return false;
+    if (vno.toLowerCase().includes(ql)) { seen.add(vno); return true; }
+    return false;
+  }).slice(0, 12);
+  if (!hits.length) { closeDD('dd_veh'); return; }
+  dd.innerHTML = '';
+  hits.forEach(r => {
+    const vno = col(r, 'Vehicle Number', 'vehicle number', 'VehicleNumber', 'VEHICLE NUMBER', 'Vehicle No', 'Vehicle No.');
+    const item = document.createElement('div');
+    item.className = 'dd-item';
+    item.innerHTML = `<span class="dd-main">${esc(vno)}</span>`;
+    item.addEventListener('mousedown', e => {
+      e.preventDefault();
+      document.getElementById('f_veh').value = vno;
+      closeDD('dd_veh');
+      focus('f_date');
+    });
+    dd.appendChild(item);
+  });
+  dd.classList.add('open');
+}
+
+// ── SEARCH: LOCATION (TO field) ──
+function searchLocation(q) {
+  const dd = document.getElementById('dd_to');
+  if (!q) { closeDD('dd_to'); return; }
+  if (!dbLocations.length) {
+    dd.innerHTML = '<div class="dd-item" style="color:#e74c3c">No location database loaded — click Load Excel</div>';
+    dd.classList.add('open');
+    return;
+  }
+  const ql = q.toLowerCase();
+  const hits = dbLocations.filter(r => {
+    const loc = col(r, 'Location', 'LOCATION', 'location') || String(Object.values(r)[0] || '');
+    return loc.toLowerCase().includes(ql);
+  }).slice(0, 12);
+  if (!hits.length) { closeDD('dd_to'); return; }
+  dd.innerHTML = '';
+  hits.forEach(r => {
+    const loc = col(r, 'Location', 'LOCATION', 'location') || String(Object.values(r)[0] || '');
+    const item = document.createElement('div');
+    item.className = 'dd-item';
+    item.innerHTML = `<span class="dd-main">${esc(loc)}</span>`;
+    item.addEventListener('mousedown', e => {
+      e.preventDefault();
+      document.getElementById('f_to_si').value = loc;
+      closeDD('dd_to');
+      focus('inv_1');
+    });
+    dd.appendChild(item);
+  });
+  dd.classList.add('open');
+}
+
+// ── HELPERS ──
+function closeDD(id) {
+  const dd = document.getElementById(id);
+  if (dd) dd.classList.remove('open');
+}
+
+function focus(id) {
+  const el = document.getElementById(id);
+  if (el) { el.focus(); el.select && el.select(); }
+}
+
+function handleEnter(e, nextId) {
+  if (e.key === 'Enter') { e.preventDefault(); focus(nextId); }
+}
+
+// ── DROPDOWN KEYBOARD NAVIGATION ──
+function handleDDKeydown(e, ddId, onSelect) {
+  const dd = document.getElementById(ddId);
+  if (!dd || !dd.classList.contains('open')) return;
+  const items = dd.querySelectorAll('.dd-item');
+  if (!items.length) return;
+
+  const current = dd.querySelector('.dd-item.active');
+  let idx = Array.from(items).indexOf(current);
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (current) current.classList.remove('active');
+    idx = (idx + 1) % items.length;
+    items[idx].classList.add('active');
+    items[idx].scrollIntoView({ block: 'nearest' });
+
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (current) current.classList.remove('active');
+    idx = (idx - 1 + items.length) % items.length;
+    items[idx].classList.add('active');
+    items[idx].scrollIntoView({ block: 'nearest' });
+
+  } else if (e.key === 'Enter') {
+    if (current) {
+      e.preventDefault();
+      onSelect(current);
+    }
+  }
+}
+
+function ddKeydown(e, ddId, nextId) {
+  const dd = document.getElementById(ddId);
+  if (dd && dd.classList.contains('open')) {
+    handleDDKeydown(e, ddId, (item) => item.dispatchEvent(new MouseEvent('mousedown')));
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    focus(nextId);
+  }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function calcTotal() {
+  let t = 0;
+  for (let i = 1; i <= ROWS; i++) {
+    const v = parseFloat(document.getElementById('qty_' + i)?.value || '');
+    if (!isNaN(v)) t += v;
+  }
+  document.getElementById('f_total').value = t > 0 ? t : '';
+}
+
+window.addEventListener('keydown', function(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+    e.preventDefault();
+    printReceipt();
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+    e.preventDefault();
+    newReceipt();
+  }
+});
+
+window.addEventListener('keydown', function(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+    e.preventDefault();
+    printReceipt();
+  }
+});
+async function saveToSheets() {
+  const rows = [];
+  let srNo = 1;
+
+  for (let i = 1; i <= ROWS; i++) {
+    const inv  = document.getElementById('inv_'  + i)?.value?.trim();
+    const qty  = document.getElementById('qty_'  + i)?.value?.trim();
+    const desc = document.getElementById('desc_' + i)?.value?.trim();
+    if (!desc && !inv && !qty) continue;
+
+    rows.push({
+      srNo:            srNo++,
+      date:            document.getElementById('f_date').value,
+      lrNo:            document.getElementById('f_lr').value,
+      vehicleNo:       document.getElementById('f_veh').value,
+      vehicleType:     document.getElementById('f_vtype').value,
+      consignee:       document.getElementById('f_consignee_search').value,
+      to:              document.getElementById('f_to_si').value,
+      invoiceNo:       inv,
+      qty:             qty,
+      itemDescription: desc
+    });
+  }
+
+  if (rows.length === 0) return;
+
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ rows }),
+    });
+  } catch(e) {
+    console.error('Sheets save failed:', e);
+  }
+}
+
+// ── NEW RECEIPT ──
+function newReceipt() {
+  document.getElementById('f_vtype').value = '';
+  document.getElementById('f_veh').value = '';
+  document.getElementById('f_date').value = '';
+  document.getElementById('f_consignee_search').value = '';
+  document.getElementById('consignee_display').innerHTML = '';
+  document.getElementById('consignee_mobile_row').style.display = 'none';
+  document.getElementById('f_mobile').value = '';
+  document.getElementById('f_to_si').value = '';
+  document.getElementById('f_freight').value = '';
+  document.getElementById('f_total').value = '';
+
+  for (let i = 1; i <= ROWS; i++) {
+    document.getElementById('inv_'  + i).value = '';
+    document.getElementById('desc_' + i).value = '';
+    document.getElementById('qty_'  + i).value = '';
+  }
+
+  incrementLR();
+
+  const now = new Date();
+  const z = n => String(n).padStart(2, '0');
+  document.getElementById('f_date').value = `${z(now.getDate())}/${z(now.getMonth()+1)}/${now.getFullYear()}`;
+
+  focus('f_vtype');
+}
+
+// ── PRINT 3 COPIES ──
+async function printReceipt() {
+  // Clone receipt 2 more times for print
+  const original = document.getElementById('receipt');
+  const copies = [];
+  for (let i = 0; i < 2; i++) {
+    const clone = original.cloneNode(true);
+    clone.id = 'receipt_copy_' + i;
+    clone.style.marginTop = '0';
+    clone.style.pageBreakBefore = 'always';
+    document.body.appendChild(clone);
+    copies.push(clone);
+  }
+  await saveToSheets();  // ← ADDED
+  window.print();
+  // Remove clones after print
+  copies.forEach(c => document.body.removeChild(c));
+  // Increment LR after printing
+  incrementLR();
+}
+
+// ── INIT ──
+buildTable();
+initDB();
+
+// Auto date
+const now = new Date();
+const z = n => String(n).padStart(2, '0');
+document.getElementById('f_date').value = `${z(now.getDate())}/${z(now.getMonth()+1)}/${now.getFullYear()}`;
+</script>
+</body>
+</html>
