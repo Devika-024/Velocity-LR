@@ -1214,52 +1214,6 @@ async function printReceipt() {
   incrementLR();
 }
 
-// ── DOUBLE BACKSPACE = PREVIOUS FIELD ──
-let lastBackspaceTime = 0;
-
-document.addEventListener('keydown', function(e) {
-
-    if (e.key !== 'Backspace') return;
-
-    const el = document.activeElement;
-
-    if (!el || el.tagName !== 'INPUT') return;
-
-    const now = Date.now();
-
-    // Two Backspaces quickly = move to previous field
-    if (now - lastBackspaceTime < 500) {
-
-        e.preventDefault();
-
-        const inputs = Array.from(
-            document.querySelectorAll(
-                'input:not([type="hidden"]):not([disabled]):not([readonly])'
-            )
-        );
-
-        const currentIndex = inputs.indexOf(el);
-
-        if (currentIndex > 0) {
-
-            const previous = inputs[currentIndex - 1];
-
-            previous.focus();
-            previous.select();
-
-        }
-
-        lastBackspaceTime = 0;
-
-    } else {
-
-        // First Backspace behaves normally and deletes text
-        lastBackspaceTime = now;
-
-    }
-
-});
-
 // ── INIT ──
 buildTable();
 initDB();
