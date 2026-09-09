@@ -422,15 +422,19 @@ td.sig-td {
       <span style="font-weight:700">CONSIGNEE:</span>
       <!-- Search box (hidden on print) -->
       <div class="consignee-search-wrap">
-        <input type="text" class="consignee-si" id="f_consignee_search"
-          placeholder="Search by customer or location…"
-          tabindex="5"
-          autocomplete="off"
-          oninput="searchConsignee(this.value)"
-          onfocus="if(this.value) searchConsignee(this.value)"
-          onblur="setTimeout(()=>closeDD('dd_consignee'),180)"
-          onkeydown="consigneeKeydown(event)"
-        <div class="ddrop" id="dd_consignee"></div>
+          <input
+              type="text"
+              class="consignee-si"
+              id="f_consignee_search"
+              placeholder="Search by customer or location…"
+              tabindex="5"
+              autocomplete="off"
+              oninput="searchConsignee(this.value)"
+              onfocus="if(this.value) searchConsignee(this.value)"
+              onblur="setTimeout(()=>closeDD('dd_consignee'),180)"
+              onkeydown="consigneeKeydown(event)"
+          >
+          <div class="ddrop" id="dd_consignee"></div>
       </div>
       <!-- Display after selection -->
       <div class="consignee-display" id="consignee_display"></div>
@@ -821,6 +825,11 @@ function col(row, ...names) {
 // ── SEARCH: CONSIGNEE ──
 function searchConsignee(q) {
   const dd = document.getElementById('dd_consignee');
+
+  if (!dd) {
+      console.error('Consignee dropdown element #dd_consignee not found');
+      return;
+  }
   if (!q) { closeDD('dd_consignee'); return; }
   if (!dbCustomers.length) {
     dd.innerHTML = '<div class="dd-item" style="color:#e74c3c">No customer database loaded — click Load Excel</div>';
@@ -1151,34 +1160,47 @@ async function printReceipt() {
   incrementLR();
 }
 
-// ── BACKSPACE = PREVIOUS FIELD ──
+// ── DOUBLE BACKSPACE = PREVIOUS FIELD ──
+let lastBackspaceTime = 0;
+
 document.addEventListener('keydown', function(e) {
 
     if (e.key !== 'Backspace') return;
 
     const el = document.activeElement;
 
-    // Don't interfere while typing inside a field
-    if (el.tagName !== 'INPUT') return;
+    if (!el || el.tagName !== 'INPUT') return;
 
-    // If there is text in the current field, allow normal Backspace
-    if (el.value.length > 0) return;
+    const now = Date.now();
 
-    // Get all usable inputs in tab order
-    const inputs = Array.from(
-        document.querySelectorAll('input:not([type="hidden"]):not([disabled]):not([readonly])')
-    );
-
-    const currentIndex = inputs.indexOf(el);
-
-    if (currentIndex > 0) {
+    // Two Backspaces quickly = move to previous field
+    if (now - lastBackspaceTime < 500) {
 
         e.preventDefault();
 
-        const previous = inputs[currentIndex - 1];
+        const inputs = Array.from(
+            document.querySelectorAll(
+                'input:not([type="hidden"]):not([disabled]):not([readonly])'
+            )
+        );
 
-        previous.focus();
-        previous.select();
+        const currentIndex = inputs.indexOf(el);
+
+        if (currentIndex > 0) {
+
+            const previous = inputs[currentIndex - 1];
+
+            previous.focus();
+            previous.select();
+
+        }
+
+        lastBackspaceTime = 0;
+
+    } else {
+
+        // First Backspace behaves normally and deletes text
+        lastBackspaceTime = now;
 
     }
 
