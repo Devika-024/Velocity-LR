@@ -277,7 +277,7 @@ td.desc-td { text-align: left; }
   line-height: 1.45;
 }
 .dd-item:last-child { border-bottom: none; }
-.dd-item:hover { background: #fff9c4; }
+.dd-item:hover { background: #e0e0e0; }
 .dd-main { font-weight: 700; color: #1c2b3a; }
 .dd-sub  { font-size: 11px; color: #666; margin-top: 1px; }
 .dd-code { font-size: 11px; color: #999; }
@@ -285,7 +285,7 @@ td.desc-td { text-align: left; }
   font-size: 11px; background: #e8f5e9; color: #2e7d32;
   padding: 1px 6px; border-radius: 10px; margin-left: 5px;
 }
-.dd-item.active { background: #fff9c4; }
+.dd-item.active { background: #d6d6d6; }
 
 /* Signature column */
 td.sig-td {
@@ -429,7 +429,7 @@ td.sig-td {
           oninput="searchConsignee(this.value)"
           onfocus="if(this.value) searchConsignee(this.value)"
           onblur="setTimeout(()=>closeDD('dd_consignee'),180)"
-          onkeydown="ddKeydown(event, 'dd_consignee', 'f_mobile')">
+          onkeydown="consigneeKeydown(event)"
         <div class="ddrop" id="dd_consignee"></div>
       </div>
       <!-- Display after selection -->
@@ -984,6 +984,17 @@ function handleEnter(e, nextId) {
   if (e.key === 'Enter') { e.preventDefault(); focus(nextId); }
 }
 
+function consigneeKeydown(e) {
+
+    if (e.key !== 'Enter') return;
+
+    e.preventDefault();
+
+    closeDD('dd_consignee');
+
+    focus('f_mobile');
+}
+
 // ── DROPDOWN KEYBOARD NAVIGATION ──
 function handleDDKeydown(e, ddId, onSelect) {
   const dd = document.getElementById(ddId);
@@ -1102,7 +1113,6 @@ function newReceipt() {
   document.getElementById('consignee_mobile_row').style.display = 'none';
   document.getElementById('f_mobile').value = '';
   document.getElementById('f_to_si').value = '';
-  document.getElementById('f_freight').value = '';
   document.getElementById('f_total').value = '';
 
   for (let i = 1; i <= ROWS; i++) {
@@ -1140,6 +1150,39 @@ async function printReceipt() {
   // Increment LR after printing
   incrementLR();
 }
+
+// ── BACKSPACE = PREVIOUS FIELD ──
+document.addEventListener('keydown', function(e) {
+
+    if (e.key !== 'Backspace') return;
+
+    const el = document.activeElement;
+
+    // Don't interfere while typing inside a field
+    if (el.tagName !== 'INPUT') return;
+
+    // If there is text in the current field, allow normal Backspace
+    if (el.value.length > 0) return;
+
+    // Get all usable inputs in tab order
+    const inputs = Array.from(
+        document.querySelectorAll('input:not([type="hidden"]):not([disabled]):not([readonly])')
+    );
+
+    const currentIndex = inputs.indexOf(el);
+
+    if (currentIndex > 0) {
+
+        e.preventDefault();
+
+        const previous = inputs[currentIndex - 1];
+
+        previous.focus();
+        previous.select();
+
+    }
+
+});
 
 // ── INIT ──
 buildTable();
