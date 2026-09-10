@@ -1156,6 +1156,8 @@ async function saveToSheets() {
 
   if (rows.length === 0) return;
 
+  console.log('Sending to sheets:', JSON.stringify({ rows, secret: 'velocity2024' }));
+
   try {
     await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
@@ -1164,6 +1166,12 @@ async function saveToSheets() {
   } catch(e) {
     console.error('Sheets save failed:', e);
   }
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ rows, secret: 'velocity2024' }),
+  });
+  const result = await res.json();
+  console.log('Sheets response:', result);
 }
 
 // ── NEW RECEIPT ──
