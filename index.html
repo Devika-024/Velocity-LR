@@ -1203,6 +1203,7 @@ function newReceipt() {
 
 // ── PRINT 3 COPIES ──
 async function printReceipt() {
+  await saveToSheets(); // ← MOVE TO TOP, before any cloning
   // Clone receipt 2 more times for print
   const original = document.getElementById('receipt');
   const copies = [];
