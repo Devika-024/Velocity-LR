@@ -1143,14 +1143,14 @@ async function saveToSheets() {
     rows.push({
       srNo:            srNo++,
       date:            document.getElementById('f_date').value,
-      lrNo:            document.getElementById('f_lr').value,
-      vehicleNo:       document.getElementById('f_veh').value,
-      vehicleType:     document.getElementById('f_vtype').value,
-      consignee:       document.getElementById('f_consignee_search').value,
-      to:              document.getElementById('f_to_si').value,
       invoiceNo:       inv,
+      customerName:    document.getElementById('f_consignee_search').value,
+      itemDescription: desc,
       qty:             qty,
-      itemDescription: desc
+      vehicleNo:       document.getElementById('f_veh').value,
+      location:        document.getElementById('f_to_si').value,
+      vehicleType:     document.getElementById('f_vtype').value,
+      lrNo:            document.getElementById('f_lr').value,
     });
   }
 
@@ -1159,7 +1159,7 @@ async function saveToSheets() {
   try {
     await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ rows }),
+      body: JSON.stringify({ rows, secret: 'velocity2024' }),
     });
   } catch(e) {
     console.error('Sheets save failed:', e);
