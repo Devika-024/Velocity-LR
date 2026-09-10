@@ -1130,29 +1130,6 @@ window.addEventListener('keydown', function(e) {
     printReceipt();
   }
 });
-async function saveToSheets() {
-  const rows = [];
-  let srNo = 1;
-
-  for (let i = 1; i <= ROWS; i++) {
-    const inv  = document.getElementById('inv_'  + i)?.value?.trim();
-    const qty  = document.getElementById('qty_'  + i)?.value?.trim();
-    const desc = document.getElementById('desc_' + i)?.value?.trim();
-    if (!desc && !inv && !qty) continue;
-
-    rows.push({
-      srNo:            srNo++,
-      date:            document.getElementById('f_date').value,
-      invoiceNo:       inv,
-      customerName:    document.getElementById('f_consignee_search').value,
-      itemDescription: desc,
-      qty:             qty,
-      vehicleNo:       document.getElementById('f_veh').value,
-      location:        document.getElementById('f_to_si').value,
-      vehicleType:     document.getElementById('f_vtype').value,
-      lrNo:            document.getElementById('f_lr').value,
-    });
-  }
 
   if (rows.length === 0) return;
 
@@ -1203,8 +1180,45 @@ function newReceipt() {
 
 // ── PRINT 3 COPIES ──
 async function printReceipt() {
-  await saveToSheets(); // ← MOVE TO TOP, before any cloning
-  // Clone receipt 2 more times for print
+  // Collect data FIRST before any cloning
+  const rows = [];
+  let srNo = 1;
+
+  for (let i = 1; i <= ROWS; i++) {
+    const inv  = document.getElementById('inv_'  + i)?.value?.trim();
+    const qty  = document.getElementById('qty_'  + i)?.value?.trim();
+    const desc = document.getElementById('desc_' + i)?.value?.trim();
+    if (!desc && !inv && !qty) continue;
+
+    rows.push({
+      srNo:            srNo++,
+      date:            document.getElementById('f_date').value,
+      invoiceNo:       inv,
+      customerName:    document.getElementById('f_consignee_search').value,
+      itemDescription: desc,
+      qty:             qty,
+      vehicleNo:       document.getElementById('f_veh').value,
+      location:        document.getElementById('f_to_si').value,
+      vehicleType:     document.getElementById('f_vtype').value,
+      lrNo:            document.getElementById('f_lr').value,
+    });
+  }
+
+  // Send once
+  if (rows.length > 0) {
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ rows, secret: 'velocity2024' }),
+      });
+      const result = await res.json();
+      console.log('Sheets response:', result);
+    } catch(e) {
+      console.error('Sheets save failed:', e);
+    }
+  }
+
+  // Now clone and print
   const original = document.getElementById('receipt');
   const copies = [];
   for (let i = 0; i < 2; i++) {
@@ -1215,11 +1229,8 @@ async function printReceipt() {
     document.body.appendChild(clone);
     copies.push(clone);
   }
-  await saveToSheets();  // ← ADDED
   window.print();
-  // Remove clones after print
   copies.forEach(c => document.body.removeChild(c));
-  // Increment LR after printing
   incrementLR();
 }
 
