@@ -1130,6 +1130,29 @@ window.addEventListener('keydown', function(e) {
     printReceipt();
   }
 });
+async function saveToSheets() {
+  const rows = [];
+  let srNo = 1;
+
+  for (let i = 1; i <= ROWS; i++) {
+    const inv  = document.getElementById('inv_'  + i)?.value?.trim();
+    const qty  = document.getElementById('qty_'  + i)?.value?.trim();
+    const desc = document.getElementById('desc_' + i)?.value?.trim();
+    if (!desc && !inv && !qty) continue;
+
+    rows.push({
+      srNo:            srNo++,
+      date:            document.getElementById('f_date').value,
+      invoiceNo:       inv,
+      customerName:    document.getElementById('f_consignee_search').value,
+      itemDescription: desc,
+      qty:             qty,
+      vehicleNo:       document.getElementById('f_veh').value,
+      location:        document.getElementById('f_to_si').value,
+      vehicleType:     document.getElementById('f_vtype').value,
+      lrNo:            document.getElementById('f_lr').value,
+    });
+  }
 
   if (rows.length === 0) return;
 
