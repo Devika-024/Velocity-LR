@@ -349,7 +349,7 @@ td.sig-td {
   <input type="file" id="xlFile" accept=".xlsx,.xls" style="display:none" onchange="loadExcel(this)"> 
   <button class="tb-btn grey" onclick="clearData()">✕ Clear Data</button> -->
   <button class="tb-btn" onclick="newReceipt()">+ New Receipt</button>
-  <button class="tb-btn print" onclick="printReceipt()">🖨 Print (3 copies)</button>
+  <button class="tb-btn print" id="printBtn" onclick="printReceipt()">🖨 Print (3 copies)</button>
 </div>
 
 <!-- RECEIPT -->
@@ -1215,16 +1215,19 @@ function newReceipt() {
 
 // ── PRINT 3 COPIES ──
 async function printReceipt() {
-  // Collect data FIRST before any cloning
-  const rows = []; 
-  let srNo = 1;
+  // Disable button immediately to prevent double clicks
+  const btn = document.getElementById('printBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Saving...';
 
+  // Collect data
+  const rows = [];
+  let srNo = 1;
   for (let i = 1; i <= ROWS; i++) {
     const inv  = document.getElementById('inv_'  + i)?.value?.trim();
     const qty  = document.getElementById('qty_'  + i)?.value?.trim();
     const desc = document.getElementById('desc_' + i)?.value?.trim();
     if (!desc && !inv && !qty) continue;
-
     rows.push({
       srNo:            srNo++,
       date:            document.getElementById('f_date').value,
@@ -1239,7 +1242,7 @@ async function printReceipt() {
     });
   }
 
-  // Send once
+  // Send to sheets
   if (rows.length > 0) {
     try {
       const res = await fetch(APPS_SCRIPT_URL, {
@@ -1253,7 +1256,8 @@ async function printReceipt() {
     }
   }
 
-  // Now clone and print
+  // Clone and print
+  btn.textContent = '🖨 Printing...';
   const original = document.getElementById('receipt');
   const copies = [];
   for (let i = 0; i < 2; i++) {
@@ -1264,9 +1268,14 @@ async function printReceipt() {
     document.body.appendChild(clone);
     copies.push(clone);
   }
+
   window.print();
   copies.forEach(c => document.body.removeChild(c));
   incrementLR();
+
+  // Re-enable button
+  btn.disabled = false;
+  btn.textContent = '🖨 Print (3 copies)';
 }
 
 // ── INIT ──
