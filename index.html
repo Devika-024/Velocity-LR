@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Velocity Supply Chain – Receipt</title>
+<title>RAHUL TEMPO SERVICE</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -357,8 +357,8 @@ td.sig-td {
   <!-- Company header + Vehicle Type -->
   <div class="row-header">
     <div class="cell-company">
-      <div class="co-name">VELOCITY SUPPLY CHAIN PVT. LTD.</div>
-      <div class="co-addr">GAT NO.54 VILLAGE KURULI, TALUKA- KHED, PUNE-410501</div>
+      <div class="co-name">RAHUL TEMPO SERVICE</div>
+      <div class="co-addr">"Shivkrupa", S. No. 27/2, Ambegaon (Bk) Pathar, Behind Bharati Vidhyapeeth, Pune - 411 046.</div>
     </div>
     <div class="cell-vehicle-type">
       <label>Vehicle Type</label>
@@ -377,8 +377,9 @@ td.sig-td {
 
   <!-- GSTIN / PAN -->
   <div class="row-gp">
-    <div class="cell-gstin">GSTIN: 27AADCV9244R1ZF</div>
-    <div class="cell-pan">PAN:AADCV9244R</div>
+    <div class="cell-gstin">GSTIN: 27AGVPM6111D1ZC</div>
+    <div class="cell-pan">PAN:AGVPM6111D</div>
+    <div class="cell-adhar">Udyog Adhar No.:MH26D0153328</div>
   </div>
 
   <!-- Vehicle / Date / LR -->
@@ -414,9 +415,8 @@ td.sig-td {
   <!-- Consigner / Consignee -->
   <div class="row-cc">
     <div class="cell-consigner">
-      CONSIGNER: VELOCITY SUPPLY CHAIN PVT. LTD.<br>
-      GAT NO.54 VILLAGE KURULI, TALUKA- KHED,,<br>
-      PUNE-410501
+      <span style="font-weight:700">CONSIGNER:</span> J. K. Tyre & Industries Ltd<br>
+      Survey No. 125/1A/4, Uruli Devachi, Pune-Saswad Road, Opp. Sahyadri Dhaba, Tal. Haveli, Dist. Pune.
     </div>
     <div class="cell-consignee">
       <span style="font-weight:700">CONSIGNEE:</span>
@@ -429,7 +429,7 @@ td.sig-td {
               placeholder="Search by customer or location…"
               tabindex="5"
               autocomplete="off"
-              oninput="searchConsignee(this.value)"
+              oninput="searchConsignee(this.value); if(!this.value.trim()) { document.getElementById('consignee_display').innerHTML=''; document.getElementById('consignee_mobile_row').style.display='none'; }"
               onfocus="if(this.value) searchConsignee(this.value)"
               onblur="setTimeout(()=>closeDD('dd_consignee'),180)"
               onkeydown="consigneeKeydown(event)"
@@ -876,6 +876,17 @@ function fillConsignee(name, custId, location, territory, mobile) {
   document.getElementById('f_consignee_search').value = name + (custId ? ' (' + custId + ')' : '');
 }
 
+// ── CONSIGNEE FREE TYPE ──
+document.getElementById('f_consignee_search').addEventListener('blur', function() {
+  setTimeout(() => {
+    const display = document.getElementById('consignee_display');
+    const typed = this.value.trim();
+    if (typed && display.innerHTML === '') {
+      display.innerHTML = `<span class="c-name">${esc(typed)}</span>`;
+    }
+  }, 300);
+});
+
 // ── SEARCH: VEHICLE TYPE ──
 function searchVehicleType(q) {
   const dd = document.getElementById('dd_vtype');
@@ -1204,7 +1215,7 @@ function newReceipt() {
 // ── PRINT 3 COPIES ──
 async function printReceipt() {
   // Collect data FIRST before any cloning
-  const rows = [];
+  const rows = []; 
   let srNo = 1;
 
   for (let i = 1; i <= ROWS; i++) {
